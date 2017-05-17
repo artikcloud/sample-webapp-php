@@ -45,12 +45,10 @@ class DefaultController extends Controller
     public function oauth2RedirectURI(Request $request)
     {
 
-        self::log("Redirect Uri");
         
         $code = $request->query->get('code');
         $state = $request->query->get('state');
 
-        self::log("Redirect Uri with Code:".$code." and state:".$state);
 
         if($state) {
             
@@ -64,16 +62,13 @@ class DefaultController extends Controller
 
         $response = json_decode(Helper::exchangeCode($code), true);
 
-        self::log($response);
 
 
         $session = $this->get('session');
         $session->set('token', $response);
         
 
-        self::log("calling user info with access token");
         $userResponse = json_decode($this->getUserFullName($response['access_token']), true);
-        self::log($userResponse);
         //id, name, email, fullName, saIdentity, createdOn, modifiedOn
 
 
@@ -123,21 +118,18 @@ class DefaultController extends Controller
              //TODO/SDK as Bug:  Missing / how to retrieve header information
              //https://github.com/artikcloud/artikcloud-php/blob/master/docs/Api/MessagesApi.md#sendmessage
              $response = $messages_api->sendMessage($message);
-             self::log("Got Response:".json_encode($response));
              return new Response($response);
 
         } catch (ArtikCloud\ApiException $e) {
 
              //$session->remove('token');
 
-             $logger->error(json_encode($e->getResponseBody()));
 
              return new Response(json_encode($e->getResponseBody()), $e->getCode());
 
         } catch (\Exception $e) {
             // echo 'Exception while calling message api', $e->getMessage(), PHP_EOL;
              
-             $logger->error($e->getMessage());
              return new Response($e->getMessage(), $e->getCode());
         }
        
@@ -150,7 +142,6 @@ class DefaultController extends Controller
 
         //echo "$_SERVER[REQUEST_URI]";
 
-        $logger = $this->get('logger');
 
         //Example Activity Tracker
         $device_id = "1efff91de88243e5b9c5ef4a5541ed02";
@@ -176,7 +167,6 @@ class DefaultController extends Controller
              //"data": { "state": [ 22 ], "description": [ "my simple description" ], "stepCount": [ 56 ], "heartRate": [ 67 ], "activity": [ 12 ] } 
 
              $response = $messages_api->getLastNormalizedMessages($count, $sdids);
-             $logger->info($response);
 
              return new Response($response);
 
@@ -184,21 +174,15 @@ class DefaultController extends Controller
         } catch (ArtikCloud\ApiException $e) {
              
 
-             // $logger->error($e->getMessage());
-             // $logger->error($e->getCode());
-             // $logger->error(print_r($e->getResponseHeaders()));
-             // $logger->error(print_r($e->getResponseBody()));
 
              $session->remove('token');
 
-             $logger->error(json_encode($e->getResponseBody()));
 
              return new Response(json_encode($e->getResponseBody()), $e->getCode());
 
         } catch (\Exception $e) {
             // echo 'Exception while calling message api', $e->getMessage(), PHP_EOL;
              
-             $logger->error($e->getMessage());
              return new Response($e->getMessage(), $e->getCode());
         }
        
@@ -208,7 +192,6 @@ class DefaultController extends Controller
 
         echo "calling getUserFullName >>>>>";
 
-        $logger = $this->get('logger');
         $session = $this->get('session');
         $token = $session->get('token');
 
@@ -234,12 +217,9 @@ class DefaultController extends Controller
 
          try {
 
-            $logger = $this->get('logger');
-            $logger->$logMode($data);
 
          } catch(\Exception $e) {
 
-            $logger->warning("There was an error trying to log data: " . print_r($data));
 
          }
          
