@@ -1,0 +1,274 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div id="wrapper">
+        <div id="container">
+
+            {% set token = app.session.get('token') %}
+            {% set user = app.session.get('user')['data'] %}
+
+            {% if token['access_token'] is defined %}
+
+              <p>Hello <span class="fullname">{{user.fullName}}!</span></b> </p>
+              <p>You are logged in.  SEND and GET a message below.<p>
+
+              <div>
+                <div id="send-message" class="command">Send a Message</div>
+                <div id="send-message-response" class="response"></div>
+              </div>
+              <div>
+                <div id="get-message" class="command">Get Last Message</div>
+                <div class="get-message-response" class="response"></div>
+              </div>
+
+            {% else %}
+                Hello.  You must signin first.
+            {% endif %}  
+
+        </div>
+
+        <div id="output"></div>
+
+        <div id="footer">
+            
+            {% if token['access_token'] is defined %}
+
+            {% endif %}
+
+             <div class="console">
+                <div>name: {{user.fullName | default("n/a")}}</div>
+                <div>email:  {{user.email | default("n/a") }}</div>
+                <div>access token: {{token.access_token | default("n/a") }}</div>
+                <div>valid for: {{token.expires_in | default("n/a")}} seconds</div>
+                <div>Mode: {{env | default("n/a")}}</div>
+
+                <hr />
+               <span><span class="button" id="login" style="color:blue">/authorize (Login)</span></span>
+               <span><span class="button" id="login2" style="color:blue">/signin (Force Signin)</span></span>
+               <span><span class="button" id="signout" style="color:blue">/signout (Logout)</span></span>
+
+              </div>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block stylesheets %}
+
+<style>
+
+    body { background: #white; font: 18px/1.5 sans-serif; }
+
+    .console {
+
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        font-size: 0.4em;
+    }
+
+    .fullname {
+      font-weight: 800;
+    }
+
+    .command {
+
+      font-size: 1.2em;
+      color: #3333cc;
+      cursor: pointer;
+    }
+
+    .tiny {
+      font-size: 0.5em;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 0.1em 0.2em;
+      margin: 0.2em;
+      color: #ddd;
+      border: 1px solid gray;
+    }
+
+    .button:hover {
+
+      background-color: black;
+      color: white;
+
+    }
+
+    @media (min-width: 768px) {
+        #wrapper { width: 80%; margin: 2em auto; }
+        #icon-book { display: inline-block; }
+        #status a, #next a { display: block; }
+
+        @-webkit-keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+        .sf-toolbar { opacity: 0; -webkit-animation: fade-in 1s .2s forwards; animation: fade-in 1s .2s forwards;}
+    }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+
+<script src="//code.jquery.com/jquery-1.10.2.min.js"></script>
+
+<script>
+
+   var client_id = "{{client_id}}";
+   var redirect_uri = "{{redirect_uri}}";
+   var response_type = "{{response_type}}";
+   
+   //http://localhost:8888/#access_token=12cd07d6cae241eeabc045dc64edec43&refres…8f4265a90f024e009e9152&state=abcdefgh&token_type=bearer&expires_in=1209600
+
+   onTokenResponse(window.location.href);
+
+   /**
+   *  parse surl fragment for the token
+   *  @param url
+   */
+
+   function onTokenResponse(url) {
+      var accessToken = {};
+      var fragment = url.split('#');
+      if(!fragment || fragment.length != 2) {
+        console.log("Could not find fragment or implicit token");
+        return;
+      }
+      var tokenResponse = fragment[1];
+      tokenResponse.split("&").forEach(function(token){
+           var token = token.split("=");
+           accessToken[token[0]] = token[1];
+      })
+
+      sessionStorage.setItem('artikcloud', JSON.stringify(accessToken));
+   }
+
+   /**
+   * triggers ARTIK Cloud login flow
+   * will authenticate using oauth2 'implicit' method and access token
+   * fragment will be available at indicated redirect_uri
+   */
+
+   function login() {
+
+      //TODO:  replace values with {}
+      console.log("login clicked");
+      window.location = 'https://accounts.artik.cloud/authorize?client_id=' + client_id + '&response_type=' + response_type + '&redirect_uri=' + redirect_uri + 
+      '&state={{state}}';
+
+      
+      //'https://accounts.artik.cloud/authorize?client_id={{client_id}}&response_type={{response_type}}&redirect_uri={{redirect_uri}}&state={{state}}'
+
+   }
+
+    function login2() {
+
+      //TODO:  replace values with {}
+      console.log("login clicked");
+      window.location = 'https://accounts.artik.cloud/signin?client_id=' + client_id + '&response_type=' + response_type + '&redirect_uri=' + redirect_uri + 
+      '&state={{state}}';
+
+      
+      //'https://accounts.artik.cloud/authorize?client_id={{client_id}}&response_type={{response_type}}&redirect_uri={{redirect_uri}}&state={{state}}'
+
+   }
+
+
+   function sendMessage() {
+
+      $('#output').empty();
+
+    
+      console.log("sending message");
+
+      $.ajax({
+        type: "POST",
+        url: "message/send",
+        data: JSON.stringify({}),
+        timeout: 5000,
+        success: function(success){
+            console.log(success);
+            $('#output').append(success);
+        },
+        error: function(error) {
+
+            console.log(error);
+            var message = "";
+
+            if(error.statusText) {
+                message = "Request timed out ... try again or check your proxy settings.";
+            }
+            else if (error.status == 401) {
+                message = "Error 401:  Your token is no longer valid — Please login again";
+                setTimeout(function(){
+
+                    window.location = "";
+
+                }, 2000)
+            }
+            else {
+                message = error.responseText;
+            }
+
+            $('#output').append(message);
+        }
+      });
+
+
+
+   }
+
+   function getMessage() {
+
+      $('#output').empty();
+
+    
+      console.log("get message");
+
+      $.ajax({
+        type: "POST",
+        url: "message/get",
+        data: JSON.stringify({}),
+        success: function(success){
+            console.log(success);
+            $('#output').append(success);
+        },
+        error: function(error) {
+
+            var message = "";
+
+            if(error.status == 401) {
+                message = "Error 401:  Your token is no longer valid — Please login again";
+                setTimeout(function(){
+
+                    window.location = "";
+
+                }, 2000)
+            }
+            else {
+                message = error.responseText;
+            }
+
+            $('#output').append(message);
+        }
+      });
+   }
+
+   $(function() {
+      $('#login').click(login)
+      $('#login2').click(login2)
+      $('#signout').click()
+      $('#send-message').click(sendMessage);
+      $('#get-message').click(getMessage);
+
+   });
+
+</script>
+
+
+{% endblock %}
+
+
+
