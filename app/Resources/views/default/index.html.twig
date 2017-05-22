@@ -10,7 +10,7 @@
             {% if token['access_token'] is defined %}
 
               <p>Hello <span class="fullname">{{user.fullName}}!</span></b> </p>
-              <p>You are logged in.  SEND and GET a message below.<p>
+              <p><a href="https://accounts.artik.cloud/signin?client_id={{client_id}}&response_type=code&redirect_uri={{redirect_uri}}&state={{state}}">Signin</a> again or SEND and GET a message below.<p>
 
               <div>
                 <div id="send-message" class="command">Send a Message</div>
@@ -18,18 +18,15 @@
               </div>
               <div>
                 <div id="get-message" class="command">Get Last Message</div>
-                <div class="get-message-response" class="response"></div>
+                <div id="get-message-response" class="response"></div>
               </div>
 
             {% else %}
-                Hello.  You must signin first.
-                <div>Please <span class="button" id="login" style="color:blue">Login</span></div>
+                Hello.  
+                <div>You must <a href="https://accounts.artik.cloud/signin?client_id={{client_id}}&response_type=code&redirect_uri={{redirect_uri}}&state={{state}}">signin </a> first</div>
             {% endif %}  
 
         </div>
-
-        <div id="output"></div>
-        <div id="footer"></div>
     </div>
 
 {% endblock %}
@@ -40,11 +37,6 @@
 
     body { background: #white; font: 18px/1.5 sans-serif; }
 
-    @media (min-width: 768px) {
-        #wrapper { width: 80%; margin: 2em auto; }
-        #icon-book { display: inline-block; }
-        #status a, #next a { display: block; }
-    }
 </style>
 {% endblock %}
 
@@ -56,28 +48,14 @@
 
    var client_id = "{{client_id}}";
    var redirect_uri = "{{redirect_uri}}";
-   var response_type = "{{response_type}}";
-
-   /**
-   * triggers ARTIK Cloud login flow
-   * will authenticate using oauth2 'implicit' method and access token
-   * fragment will be available at indicated redirect_uri
-   */
-
-   function login() {
-
-      //TODO:  
-      console.log("login clicked");
-      window.location = 'https://accounts.artik.cloud/authorize?client_id=' + client_id + '&response_type=' + response_type + '&redirect_uri=' + redirect_uri + 
-      '&state={{state}}';
-      
-      //'https://accounts.artik.cloud/authorize?client_id={{client_id}}&response_type={{response_type}}&redirect_uri={{redirect_uri}}&state={{state}}'
-   }
+   
 
    function sendMessage() {
 
-      $('#output').empty();
+      $('#send-message-response').empty();
+      $('#send-message-response').append('Sending Message ...');
 
+    
       console.log("sending message");
 
       $.ajax({
@@ -86,39 +64,32 @@
         data: JSON.stringify({}),
         success: function(success){
             console.log(success);
-            $('#output').append(success);
+            $('#send-message-response').empty();
+            $('#send-message-response').append(success);
         },
         error: function(error) {
 
             console.log(error);
             var message = "";
 
-            if(error.statusText) {
-                message = "Request timed out ... try again or check your proxy settings.";
-            }
-            else if (error.status == 401) {
-                message = "Error 401:  Your token is no longer valid — Please login again";
-                setTimeout(function(){
-
-                    window.location = "";
-
-                }, 2000)
+            if(error.responseText) {
+                message = error.responseText;
             }
             else {
-                message = error;
+                message = error.responseText;
             }
 
-            $('#output').append(message);
+            $('#send-message-response').empty();
+            $('#send-message-response').append(message);
         }
       });
-
-
 
    }
 
    function getMessage() {
 
-      $('#output').empty();
+      $('#get-message-response').empty();
+      $('#get-message-response').append('Getting Message ...');
 
     
       console.log("get message");
@@ -128,38 +99,28 @@
         url: "message/get",
         data: JSON.stringify({}),
         success: function(success){
-            console.log(success);
-            $('#output').append(success);
+            console.log(success)
+            $('#get-message-response').empty();
+            $('#get-message-response').append(success);
         },
         error: function(error) {
 
-            var message = "";
+            var message = error.responseText;
 
-            if(error.status == 401) {
-                message = "Error 401:  Your token is no longer valid — Please login again";
-                setTimeout(function(){
-
-                    window.location = "";
-
-                }, 2000)
-            }
-            else {
-                message = error;
-            }
-
-            $('#output').append(message);
+            $('#get-message-response').empty();
+            $('#get-message-response').append(message);
         }
       });
    }
 
    $(function() {
-      $('#login').click(login)
+
       $('#send-message').click(sendMessage);
       $('#get-message').click(getMessage);
+
    });
 
 </script>
-
 {% endblock %}
 
 

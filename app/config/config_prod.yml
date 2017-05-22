@@ -8,9 +8,10 @@ imports:
 #        query_cache_driver: apc
 
 parameters:
+    device_id: 'your_device_id'
     client_id: 'your_client_id'
     client_secret: 'your_client_secret'
-    redirect_uri: 'https://your_redirect_uri'
+    redirect_uri: 'http://localhost:8000/callback/artikcloud'
     response_type: 'code'
     env: 'production'
 

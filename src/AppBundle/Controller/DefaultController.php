@@ -1,21 +1,15 @@
 <?php
-
 namespace AppBundle\Controller;
-
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-
 use ArtikCloud as ArtikCloud;
-
 use ArtikCloud\Configuration as Configuration;
 use ArtikCloud\Api as Api;
 use ArtikCloud\ApiException as ApiException;
-
 use AppBundle\Helper\Helper as Helper;
-
 
 class DefaultController extends Controller
 {
@@ -26,22 +20,21 @@ class DefaultController extends Controller
 
     public function indexAction(Request $request)
     {
-        //replace this example code with whatever you need
+
+        $this->get('session')->set('state', Helper::generateRandomString());
+
         return $this->render('default/index.html.twig', [
             'client_id' => $this->container->getParameter('client_id'),
-            'client_secret' => $this->container->getParameter('client_secret'),
             'redirect_uri' => $this->container->getParameter('redirect_uri'),
             'response_type' => $this->container->getParameter('response_type'),
             'env' => $this->container->getParameter('env'),
-            'state' => Helper::generateRandomString()
-
+            'state' => $this->get('session')->get('state')
         ]);
     }
-
-
     /**
      * @Route("/callback/artikcloud", name="callback-artikcloud")
      */
+
     public function oauth2RedirectURI(Request $request)
     {
 
@@ -49,53 +42,31 @@ class DefaultController extends Controller
         $code = $request->query->get('code');
         $state = $request->query->get('state');
 
-
-        if($state) {
-            
-            //TODO: 
+        if (strcmp($state, $this->get('session')->get('state')) !== 0) {
+           echo 'state parameter must match';
+           $this->redirectToRoute('homepage');
         }
 
-        if($code) {
-
-            //TODO: 
-        }
-
-        $response = json_decode(Helper::exchangeCode($code), true);
-
-
-
+        $response = json_decode($this->exchangeCode($code), true);
         $session = $this->get('session');
         $session->set('token', $response);
         
-
         $userResponse = json_decode($this->getUserFullName($response['access_token']), true);
-        //id, name, email, fullName, saIdentity, createdOn, modifiedOn
-
-
         $session->set('user', $userResponse);
 
         return $this->redirectToRoute('homepage'); 
-
     }
-
     /**
      * @Route("/message/send", name="message-send")
      */
-    public function sendMessage() {
 
-        //Example Activity Tracker
-        //Notes: device fields: //activity (int), description (string), heartRate (int), state (int), stepCount (int)
-
-        //TODO: force user to set in configuration file for this sample
-        $device_id = "1efff91de88243e5b9c5ef4a5541ed02";
+    public function sendMessage() 
+    {
 
         $session = $this->get('session');
         $token = $session->get('token');
 
-
-        Configuration::getDefaultConfiguration()->setAccessToken($token['access_token']);
-
-        //reference to the messages api
+        ArtikCloud\Configuration::getDefaultConfiguration()->setAccessToken($token['access_token']);
         $messages_api = new Api\MessagesApi();
 
         $data = [
@@ -106,121 +77,106 @@ class DefaultController extends Controller
             "stepCount" => 56
         ];
 
-        //https://github.com/artikcloud/artikcloud-php/blob/master/docs/Model/Message.md
         $message = new \ArtikCloud\Model\Message();
         $message->setData($data);
-        $message->setSdid($device_id);
-
+        $message->setSdid($this->container->getParameter('device_id'));
         $response = "";
 
         try {
-
-             //TODO/SDK as Bug:  Missing / how to retrieve header information
-             //https://github.com/artikcloud/artikcloud-php/blob/master/docs/Api/MessagesApi.md#sendmessage
              $response = $messages_api->sendMessage($message);
              return new Response($response);
-
         } catch (ArtikCloud\ApiException $e) {
-
-             //$session->remove('token');
-
-
              return new Response(json_encode($e->getResponseBody()), $e->getCode());
-
         } catch (\Exception $e) {
-            // echo 'Exception while calling message api', $e->getMessage(), PHP_EOL;
-             
              return new Response($e->getMessage(), $e->getCode());
         }
        
     }
-
     /**
      * @Route("/message/get", name="message-get")
      */
-    public function getMessage() {
 
-        //echo "$_SERVER[REQUEST_URI]";
+    public function getMessage() 
+    {
 
-
-        //Example Activity Tracker
-        $device_id = "1efff91de88243e5b9c5ef4a5541ed02";
-
+        $device_id = $this->container->getParameter('device_id');
         $session = $this->get('session');
         $token = $session->get('token');
 
-        //typically used with user access token here (ie: oauth2 authentication)
-        //here, we will just set this value with the device token
-        Configuration::getDefaultConfiguration()->setAccessToken($token['access_token']);
-
-        //reference to the messages api
+        ArtikCloud\Configuration::getDefaultConfiguration()->setAccessToken($token['access_token']);
+        
         $messages_api = new Api\MessagesApi();
-
         $count = 1;
-        $sdids = "1efff91de88243e5b9c5ef4a5541ed02";
-
-        $response = "";
+        $sdids = $device_id;
 
         try {
-
-             //SDK Bug: SDK mutating data into "arrays"
-             //"data": { "state": [ 22 ], "description": [ "my simple description" ], "stepCount": [ 56 ], "heartRate": [ 67 ], "activity": [ 12 ] } 
-
              $response = $messages_api->getLastNormalizedMessages($count, $sdids);
-
              return new Response($response);
-
-
         } catch (ArtikCloud\ApiException $e) {
-             
-
-
-             $session->remove('token');
-
-
              return new Response(json_encode($e->getResponseBody()), $e->getCode());
-
         } catch (\Exception $e) {
-            // echo 'Exception while calling message api', $e->getMessage(), PHP_EOL;
-             
              return new Response($e->getMessage(), $e->getCode());
         }
        
     }
 
-    private function getUserFullName($userToken) {
+    private function exchangeCode($code) 
+    {
 
-        echo "calling getUserFullName >>>>>";
+        $curl = curl_init();
+   
+        $data = array(
+            'grant_type' => 'authorization_code',
+            'client_id' =>  $this->container->getParameter('client_id'),
+            'client_secret'=> $this->container->getParameter('client_secret'),
+            'redirect_uri' => $this->container->getParameter('redirect_uri'),
+            'code' => $code
+        );
 
-        $session = $this->get('session');
-        $token = $session->get('token');
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => "https://accounts.artik.cloud/token",
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => "",
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 30,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => "POST",
+          CURLOPT_POSTFIELDS => http_build_query($data),
+          CURLOPT_HTTPHEADER => array(
+            "Content-Type: application/x-www-form-urlencoded"
+          ),
+        ));
 
-        ///typically used with user access token here (ie: oauth2 authentication)
-        //here, we will just set this value with the device token
-        Configuration::getDefaultConfiguration()->setAccessToken($userToken);
-
-        //reference to the messages api
-        $users_api = new Api\UsersApi();
-
-        $response = $users_api->getSelf();
-
-        echo "Getting user info>>>>";
-        echo $response;
-
-        var_dump($response);
+        $response = curl_exec($curl);
+        $err = curl_error($curl);
+        curl_close($curl);
+        
+        if ($err) {
+          echo "cURL Error #:" . $err;
+        } else {
+          echo $response;
+        }
         return $response;
+    } 
 
+    private function getUserFullName($userToken) 
+    {
+
+        ArtikCloud\Configuration::getDefaultConfiguration()->setAccessToken($userToken);
+        $users_api = new Api\UsersApi();
+        $response = $users_api->getSelf();
+        return $response;
     }
-
     
-    private function log($data, $logMode='info') {
+
+    private function log($data, $logMode='info') 
+    {
 
          try {
-
-
+            $logger = $this->get('logger');
+            $logger->$logMode($data);
          } catch(\Exception $e) {
-
-
+            $logger->warning("Error trying to log data: " . print_r($data));
          }
          
     }
