@@ -5,28 +5,51 @@
         <div id="container">
 
             {% set token = app.session.get('token') %}
-            {% set user = app.session.get('user')['data'] %}
+            {% set user = app.session.get('user') %}
 
             {% if token['access_token'] is defined %}
 
-              <p>Hello <span class="fullname">{{user.fullName}}!</span></b> </p>
-              <p><a href="https://accounts.artik.cloud/signin?client_id={{client_id}}&response_type=code&redirect_uri={{redirect_uri}}&state={{state}}">Signin</a> again or SEND and GET a message below.<p>
+              <h3>Hello <span class="fullname">{{user.data.fullName}}!</span></b></h3>
+              <p><a href="https://accounts.artik.cloud/signin?client_id={{client_id}}&response_type=code&redirect_uri={{redirect_uri}}&state={{state}}">Signin again</a> to login as different user<p>
 
-              <div>
-                <div id="send-message" class="command">Send a Message</div>
-                <div id="send-message-response" class="response"></div>
-              </div>
-              <div>
-                <div id="get-message" class="command">Get Last Message</div>
-                <div id="get-message-response" class="response"></div>
-              </div>
+              <hr />
 
-            {% else %}
-                Hello.  
-                <div>You must <a href="https://accounts.artik.cloud/signin?client_id={{client_id}}&response_type=code&redirect_uri={{redirect_uri}}&state={{state}}">signin </a> first</div>
-            {% endif %}  
+              <div class="row">
+              <div class="col-xs-7">
+                  <h3>Create New Device:</h3>
+                  <p><i>Add a new device below, or manually add device at <a href="https://my.artik.cloud">https://my.artik.cloud</a></i></p>
+                  <hr />
+                  <div>
+                    <input id="new-device-name" type="text" placeHolder="(ie:  My Sample Activity Tracker)" style="width:50%"></input>
+                    <button type="button" id="create-device" class="btn btn-primary command">Create New Device</button>
+                    <pre id="create-device-response" class="response prettyprint"></pre>
+                  </div>
+                  <h3> Select Device <span class="list-user-devices">(refresh list)</span> </h3>
+                  <pre id="list-user-devices-response" class="response prettyprint"></pre>
+                  <hr />
+                  <div id="compatible-devices"></div>
+              </div>
+              <div class="col-xs-5">
+                  <h3>Send Message to Device and Get Message from Device:</h3>
+                  <div>
+                    <button type="button" id="send-message" class="btn btn-primary btn-block">Send a Message</button>
+                    <pre id="send-message-response" class="response prettyprint"></pre>
+                  </div>
+                  <br />
+                  <div>
+                    <button type="button" id="get-message" class="btn btn-primary btn-block">Get Last Message</button>
+                    <pre id="get-message-response" class="response prettyprint"></pre>
+                  </div>
+
+                {% else %}
+                    Hello.  
+                    <div>You must <a href="https://accounts.artik.cloud/signin?client_id={{client_id}}&response_type=code&redirect_uri={{redirect_uri}}&state={{state}}">signin </a> first</div>
+                {% endif %}  
+              </div>
+              </div>
 
         </div>
+
     </div>
 
 {% endblock %}
@@ -36,87 +59,265 @@
 <style>
 
     body { background: #white; font: 18px/1.5 sans-serif; }
+    
 
+    .fullname {
+      font-weight: 800;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5em 0.5em;
+    }
+
+    h2,h3,h4 {
+      font-style: italic;
+      color: #0099ee;
+    }
+
+    .device-info {
+      margin: 0.4em 0.2em
+      padding-top: 0.5em;
+      padding-left: 1em;
+      margin: 0.5em 0.5em;
+      border: 1px dashed #e0e0e0;
+    }
+
+    .device-name {
+      font-size: 1.2em;
+      font-weight: 600;
+    }
+
+    .device-info:hover {
+      background-color: #cccccc;
+    }
+
+    .device-info.enabled {
+      background-color: #70B45A;
+      color: white;
+    }
+
+    .list-user-devices {
+      color: #3333aa;
+    }
+
+    .error {
+      background-color: #ecdada;
+    }
+
+    #compatible-devices {
+      height: 20em;
+      overflow: scroll;
+    }
+
+    @media (min-width: 768px) {
+        #wrapper { width: 80%; margin: 2em auto; }
+        #icon-book { display: inline-block; }
+        #status a, #next a { display: block; }
+
+        @-webkit-keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
+        .sf-toolbar { opacity: 0; -webkit-animation: fade-in 1s .2s forwards; animation: fade-in 1s .2s forwards;}
+    }
+
+    
 </style>
 {% endblock %}
 
 {% block javascripts %}
 
 <script src="//code.jquery.com/jquery-1.10.2.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 
 <script>
 
    var client_id = "{{client_id}}";
    var redirect_uri = "{{redirect_uri}}";
-   
+
+   function getSelectedDeviceId() {
+
+      return $('.device-info.enabled').find('.device-id').text();
+   }
+
+   function getUserInputDeviceName() {
+      return $('#new-device-name').val();
+   }
 
    function sendMessage() {
 
-      $('#send-message-response').empty();
-      $('#send-message-response').append('Sending Message ...');
+      var container = $('#send-message-response');
+      simpleProgress(container, "Sending Message...");
 
-    
-      console.log("sending message");
+      if(validateDeviceSelection(container) === false) return;
 
-      $.ajax({
-        type: "POST",
-        url: "message/send",
-        data: JSON.stringify({}),
-        success: function(success){
-            console.log(success);
-            $('#send-message-response').empty();
-            $('#send-message-response').append(success);
-        },
-        error: function(error) {
-
-            console.log(error);
-            var message = "";
-
-            if(error.responseText) {
-                message = error.responseText;
-            }
-            else {
-                message = error.responseText;
-            }
-
-            $('#send-message-response').empty();
-            $('#send-message-response').append(message);
-        }
-      });
+      Service.sendMessage({'deviceId': getSelectedDeviceId()}, 
+      function(success){ handleSuccessResponse(success, container)}, 
+      function(err){ handleErrorResponse(err, container)});
 
    }
 
    function getMessage() {
 
-      $('#get-message-response').empty();
-      $('#get-message-response').append('Getting Message ...');
+        var container = $('#get-message-response');
+        simpleProgress(container, "Getting Message...");
 
-    
-      console.log("get message");
+        if(validateDeviceSelection(container) === false) return;
 
-      $.ajax({
-        type: "POST",
-        url: "message/get",
-        data: JSON.stringify({}),
-        success: function(success){
-            console.log(success)
-            $('#get-message-response').empty();
-            $('#get-message-response').append(success);
-        },
-        error: function(error) {
-
-            var message = error.responseText;
-
-            $('#get-message-response').empty();
-            $('#get-message-response').append(message);
-        }
-      });
+        Service.getMessage({'deviceId': getSelectedDeviceId()}, 
+        function(success){ handleSuccessResponse(success, container)}, 
+        function(err){ handleErrorResponse(err, container)});
    }
+
+   function validateDeviceSelection(responseContainer) {
+      var deviceId = getSelectedDeviceId();
+      
+      if(deviceId === null || deviceId === "" || deviceId === undefined) {
+        simpleProgress(responseContainer, "Please select a device first");
+        return false;
+      }
+
+      return true;
+
+   }
+
+   function simpleProgress(container, message) {
+      container.empty();
+      container.append(message);
+      container.removeClass('error');
+   }
+
+   function handleSuccessResponse(success, container) {
+      container.empty();
+      container.append(success);
+      container.removeClass('error');
+   }
+
+   function handleErrorResponse(error, container) {
+      container.empty();
+
+      (error.responseText)?
+          container.append(JSON.stringify(error.responseText)):
+          container.append(JSON.stringify(error));
+  
+      container.addClass('error');
+
+   }
+
+   function listUserDevices() {
+
+        var container = $('#list-user-devices-response');
+        var view = $('#compatible-devices');
+        simpleProgress(container, "Getting your devices ...");
+        simpleProgress(view, "Getting your devices ...")
+
+        Service.listDevices({}, 
+          function(success){ 
+            //handleSuccessResponse(success, container)
+            updateViewList(JSON.parse(success), view)}, 
+          function(err){ handleErrorResponse(err, container)});
+
+   }
+
+   function updateViewList(response, view) {
+
+        view.empty();
+
+        if(response && response.total >= 1) {
+
+          response.data.devices.forEach(function(device){
+            var $element = $('<div class="device-info">');
+            $element.append('<div class="device-name">' + device.name + '</div>');
+            $element.append('<span>device id: </span><span class="device-id">' + device.id + '</span>');
+            view.append($element);
+
+          });
+
+        }
+        else if (response.total == 0) {
+            view.append("No compatible devices found.  Create a device.")
+        }
+
+   }
+
+   function createDevice() {
+
+      var container = $('#create-device-response');
+      simpleProgress(container, "Creating Device...");
+
+      if($('#new-device-name').val() == "") {
+        simpleProgress(container, "Please enter a name for the device");
+        return;
+      }
+
+      Service.createDevice({'deviceName': getUserInputDeviceName()}, 
+      function(success){ 
+          handleSuccessResponse(success, container)
+          listUserDevices()}, 
+      function(err){ handleErrorResponse(err, container)});
+
+   }
+
+   var Service = function() {
+
+        function getMessage(data, success, error) {
+           makeAjaxCall('message/get', 'POST', data, success, error);
+        }
+
+        function sendMessage(data, success, error) {
+           makeAjaxCall('message/send', 'POST', data, success, error);
+        }
+
+        function createDevice(data, success, error) {
+           makeAjaxCall('user/create-device', 'POST', data, success, error);
+        }
+
+        function listDevices(data, success, error) {
+           makeAjaxCall('user/devices', 'POST', data, success, error);
+        }
+
+        function makeAjaxCall(url, requestType, data, success, error) {
+
+          $.ajax({
+              type: requestType,
+              url: url,
+              data: JSON.stringify(data),
+              success: function(response){
+                  success(response);
+              },
+              error: function(response) {
+                  error(response);
+              }
+            });
+
+        }
+
+        var exports = {
+          getMessage: getMessage,
+          sendMessage: sendMessage,
+          createDevice: createDevice,
+          listDevices: listDevices
+        }
+
+        return exports;
+
+   }();
+
 
    $(function() {
 
       $('#send-message').click(sendMessage);
       $('#get-message').click(getMessage);
+      $('#create-device').click(createDevice);
+
+      $('#compatible-devices').on('click', ".device-info", function(e){
+        $(".device-info").removeClass('enabled');
+        var $ele = $(e.target).closest('.device-info');
+        $ele.addClass("enabled");
+      });
+
+      $('.list-user-devices').click(listUserDevices);
 
    });
 
