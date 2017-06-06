@@ -1,0 +1,43 @@
+imports:
+    - { resource: config.yml }
+
+parameters:
+    client_id: 'your_client_id'
+    client_secret: 'your_client_secret'
+    redirect_uri: 'http://localhost:8000/app_dev.php/callback/artikcloud'
+    device_id: 'your_device_id'
+    device_type_id: 'dt013005c9302a428990073c9d6359b354'
+    device_type_unique_name: 'cloud.artik.example.activitytracker'
+
+
+framework:
+    router:
+        resource: '%kernel.root_dir%/config/routing_dev.yml'
+        strict_requirements: true
+    profiler: { only_exceptions: false }
+
+web_profiler:
+    toolbar: true
+    intercept_redirects: false
+
+monolog:
+    handlers:
+        main:
+            type: stream
+            path: '%kernel.logs_dir%/%kernel.environment%.log'
+            level: debug
+            channels: ['!event']
+        console:
+            type: console
+            channels: ['!event', '!doctrine']
+        # uncomment to get logging in your browser
+        # you may have to allow bigger header sizes in your Web server configuration
+        #firephp:
+        #    type: firephp
+        #    level: info
+        #chromephp:
+        #    type: chromephp
+        #    level: info
+
+#swiftmailer:
+#    delivery_addresses: ['me@example.com']

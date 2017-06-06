@@ -8,12 +8,11 @@ imports:
 #        query_cache_driver: apc
 
 parameters:
-    device_id: 'your_device_id'
     client_id: 'your_client_id'
     client_secret: 'your_client_secret'
     redirect_uri: 'http://localhost:8000/callback/artikcloud'
-    response_type: 'code'
-    env: 'production'
+    device_type_id: 'dt013005c9302a428990073c9d6359b354'
+    device_type_unique_name: 'cloud.artik.example.activitytracker'
 
 monolog:
     handlers:
@@ -23,7 +22,7 @@ monolog:
             handler: nested
         nested:
             type: stream
-            path: '%kernel.logs_dir%/%kernel.environment%.log'
+            path: 'php://stderr'
             level: debug
         console:
             type: console

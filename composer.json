@@ -1,6 +1,6 @@
 {
     "name": "root/project",
-    "license": "proprietary",
+    "license": "Apache",
     "type": "project",
     "autoload": {
         "psr-4": {
@@ -19,12 +19,7 @@
             "vendor/symfony/symfony/src/Symfony/Component/VarDumper/Resources/functions/dump.php"
         ]
     },
-    "repositories": [
-        {
-            "type": "git",
-            "url": "https://github.com/artikcloud/artikcloud-php.git"
-        }
-    ],
+    "repositories": [],
     "require": {
         "php": ">=5.5.9",
         "doctrine/doctrine-bundle": "^1.6",
