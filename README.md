@@ -1,60 +1,89 @@
-# ARTIK Cloud:  PHP Webapp Starter 
+# Sample Web Application using ARTIK Cloud PHP SDK 
 
-This is a sample PHP webapp starter using ARTIK Cloud and setting up the SDK.   The sample will Authenticate to ARTIK Cloud and use the Messages API to Send and Retrieve a message to a device.  
+This is a sample web application demonstrating usage of the **ARTIK Cloud PHP SDK**.   This sample was built using the [symfony web framework](https://symfony.com/) and [ARTIK Cloud PHP SDK (version 2.0.7)](https://github.com/artikcloud/artikcloud-php).
 
-View this live sample here:
-https://radiant-anchorage-11263.herokuapp.com/
+**After completing this sample, you will learn the following concepts:**
+
+- Setting up <u>ARTIK Cloud Application</u> and adding <u>Application Device Type Permissions</u>
+- <u>ARTIK Cloud Login</u> and <u>Granting Permissions</u> for an Application to read / write to device.
+- <u>Importing and using the ARTIK Cloud PHP SDK</u> 
+
+**Note**:  Please keep in mind this sample is intended for demonstration purposes as a learning tool and IS NOT recommended for use in a production environment *as-is*.  It is recommended you follow any security policies of your organization.
 
 ## Requirements
 
-The sample uses php symfony webapp framework and apache web server.
-
-- [ARTIK Cloud SDK for PHP](https://github.com/artikcloud/artikcloud-php) (version 2.0.8 or greater)
 - [PHP](http://php.net/manual/en/install.php)  (Version >= 5.5.0)
 - [Composer - Installation](https://getcomposer.org/)
 
-## Introduction
-
-The tutorial [Your first Web app](https://developer.artik.cloud/documentation/tutorials/your-first-application.html) at [https://developer.artik.cloud/documentation](https://developer.artik.cloud/documentation) describes what the system does and how it is implemented.
-
-Consult [Initial setup](https://developer.artik.cloud/documentation/tutorials/your-first-application.html#initial-setup) in the tutorial to set up the cloud and web app.
-
 ## Setup
 
-1. Be sure you have installed all the requirements.
-2. Follow the Initial Setup Guide from the Introduction section above to setup your cloud application, webapp, and devices.
+### Setup at ARTIK Cloud
 
-**Create a php webapp**:
+Follow [these instructions](https://developer.artik.cloud/documentation/tools/web-tools.html#creating-an-application) to create an ARTIK Cloud Application.  Here are the settings for this sample: 
 
-This project uses symfony-standard web framework.   You can learn more about this [here](https://github.com/symfony/symfony-standard).
+-  Under “AUTHORIZATION METHODS” and enable AUTH CODE
 
-Git clone the **symfony-standard** edition:
+- Set “REDIRECT URL” to http://localhost:8000/callback/artikcloud 
+
+- Under “PERMISSIONS”, check “Read” for “Profile”
+
+   Click the “Add Device Type” button. 
+
+   Choose “Example Activity Tracker” as the Device Type
+
+   - Unique Name: cloud.artik.example.activitytracker    
+
+
+-    Device Type Id: dt013005c9302a428990073c9d6359b354
+
+   Enable “Read” and “Write” permissions for this Device Type.
 
 ```
-git clone https://github.com/symfony/symfony-standard
+Note the Client Id and Client Secret, which you will need later for the configuration file.
 ```
 
-Now copy all files from our php sample to the above project.   Here is a list of the files:
+Add the **Example Activity Tracker** into your account (or you can add this later when running the sample app)
+
+- Go to https://my.artik.cloud and go to the Devices menu
+- Click on **Add Another Device** and add the **Example Activity Tracker**.    
+
+### Setup Code
+
+This project uses [symfony](https://symfony.com/) web framework.
+
+Here are all the modified files of interest you should peek into:
 
 ```
-composer.json
-app/Resources/views/default/index.html.twig
-app/config/config_prod.yml
-src/AppBundle/Controller/DefaultController.php
-src/AppBundle/Helper/Helper.php
+composer.json   // dependencies for installation using composer
+app/Resources/views/default/index.html.twig   //frondend view
+app/config/config_prod.yml	//configuration parameters
+src/AppBundle/Controller/DefaultController.php	//webapp controller
 ```
 
-**Run Project**:
+Configure the `app/config/config_prod.yml file` 
 
-In your project, run composer so it installs dependencies for the project:
+```
+parameters:
+    client_id: 'your_client_id'
+    client_secret: 'your_client_secret'
+    redirect_uri: 'http://localhost:8000/callback/artikcloud '
+    device_type_id: 'dt013005c9302a428990073c9d6359b354'
+    device_type_unique_name: 'cloud.artik.example.activitytracker'
+```
+
+### **Run Project**:
+
+In your project folder, run composer so it installs dependencies needed for this project:
 
  ```
 composer install
  ```
 
-Setup Apache to serve your project at the /web directory and on port 8000.
+Now load up your project using your web server.   Here are some options below:
 
-**Alternatively**, you can run with PHP built-in webserver:
+**Apache**: Setup Apache to serve your files via the /web directory and listen on port 8000.
+
+**Alternatively**, you can run with <u>PHP's built-in webserver</u> by running following command:
 
 ```
 cd your_project_name/
@@ -63,7 +92,22 @@ php bin/console --env=prod cache:clear
 php bin/console server:run
 ```
 
-Project will run by default at the following location:  http://localhost:8000/.  
+#### **Run Project:**
+
+###### View your project using your brower:  http://localhost:8000  
+
+## Demo / Screenshots:
+#### Overview of the sample application  
+![](./screenshots/image1.png "")
+#### Login Screen
+  ![](./screenshots/image2.png "")
+#### Each user will see the Application Permission Screen Once
+  ![](./screenshots/image3.png "")
+#### Create a new Device or Select an existing Device
+  ![](./screenshots/image4.png "")
+#### Send Message and Get Last Message
+Message sent to the device is defined in the controller file: `src/AppBundle/Controller/DefaultController.php`
+  ![](./screenshots/image5.png "")
 
 ## More about ARTIK Cloud
 
@@ -77,6 +121,6 @@ To create and manage your services and devices on ARTIK Cloud, visit the Develop
 
 ## License and Copyright
 
-Licensed under the Apache License. See LICENSE.
+Licensed under the Apache License. See [LICENSE](https://github.com/artikcloud/sample-webapp-php/blob/master/LICENSE).
 
-Copyright (c) 2017 Samsung Electronics Co., Ltd.](https://)
+Copyright (c) 2017 Samsung Electronics Co., Ltd.
